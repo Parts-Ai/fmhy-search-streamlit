@@ -1,6 +1,8 @@
 ## Streamlit code
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
+import pandas as pd
+import gspread
+from google.oauth2 import service_account
 
 st.set_page_config(
     page_title="Search Note",
@@ -27,17 +29,19 @@ with st.sidebar:
 
 queryInputFromBox = st.text_input(label=" ", value="", help="Search for links in the Wiki.")
 
-
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-df = conn.read(
-    worksheet="Sheet1",
-    ttl="10m",
-    usecols=[0, 1],
-    nrows=3,
+# Create a connection object.
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=[
+        "https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"
+    ],
 )
+conn = connect(credentials=credentials)
+client=gspread.authorize(credentials)
 
-df = conn.read()
+sheet_id = '1DzznFoBDHVozt9JpaLcGb6VqDoPHIyPFX9WkhIN5FAk'
+csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
+database_df = pd.read_csv(csv_url, on_bad_lines='skip')
 
 for row in df.itertuples():
     st.write(f"{row.VIN}")
